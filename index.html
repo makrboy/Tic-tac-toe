@@ -21,6 +21,7 @@
             gap: 10px;
             width: 90vmin;
             height: 90vmin;
+            position: relative;
         }
         .cell {
             background-color: darkgreen;
@@ -105,18 +106,24 @@
             font-size: 2em;
             transition: all 0.5s ease;
         }
-        .animated {
-            animation: cheat 2s;
-        }
-        @keyframes cheat {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        #counter {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: darkgreen;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 2em;
+            transition: all 0.5s ease;
         }
     </style>
 </head>
 <body>
     <div id="message">
         <h2 id="winMessage"></h2>
+        <div id="counter">AI: 0 | Player: 0</div>
         <button id="reset">Reset</button>
     </div>
     <div id="turn">Your Turn</div>
@@ -139,136 +146,31 @@
         var message = document.getElementById('message');
         var resetButton = document.getElementById('reset');
         var turnDisplay = document.getElementById('turn');
+        var counterDisplay = document.getElementById('counter');
+        var aiWins = 0;
+        var playerWins = 0;
+        
+        // ... rest of your JavaScript code ... 
 
-        function checkWin(board, player) {
-            var lines = [
-                [0, 1, 2],
-                [3, 4, 5],
-                [6, 7, 8],
-                [0, 3, 6],
-                [1, 4, 7],
-                [2, 5, 8],
-                [0, 4, 8],
-                [2, 4, 6]
-            ];
-
-            for (var i = 0; i < lines.length; i++) {
-                var [a, b, c] = lines[i];
-                if (board[Math.floor(a / 3)][a % 3] === player && 
-                    board[Math.floor(b / 3)][b % 3] === player && 
-                    board[Math.floor(c / 3)][c % 3] === player) {
-                    return true;
-                }
-            }
-            return false;
+        // Update game result
+        if (checkWin(board, 'O')) {
+            aiWins++;
+            winMessage.textContent = 'AI Wins';
+            message.classList.add('active');
+        } else if (checkWin(board, 'X')) {
+            playerWins++;
+            winMessage.textContent = 'You Win';
+            message.classList.add('active');
+        } else if (turn === 9) {
+            aiWins++;
+            winMessage.textContent = 'AI Wins';
+            message.classList.add('active');
         }
 
-        function minimax(board, depth, isMaximizingPlayer) {
-            if (checkWin(board, 'O')) {
-                return { score: 10 - depth };
-            } else if (checkWin(board, 'X')) {
-                return { score: depth - 10 };
-            } else if (depth === 9) {
-                return { score: 0 };
-            }
+        // Update score counter
+        counterDisplay.textContent = `AI: ${aiWins} | Player: ${playerWins}`;
 
-            if (isMaximizingPlayer) {
-                let bestScore = -Infinity;
-                let move = {};
-
-                for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        if (board[i][j] === null) {
-                            board[i][j] = 'O';
-                            let score = minimax(board, depth + 1, false).score;
-                            board[i][j] = null;
-
-                            if (score > bestScore) {
-                                bestScore = score;
-                                move = { i, j, score: bestScore };
-                            }
-                        }
-                    }
-                }
-                return move;
-            } else {
-                let bestScore = Infinity;
-                let move = {};
-
-                for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        if (board[i][j] === null) {
-                            board[i][j] = 'X';
-                            let score = minimax(board, depth + 1, true).score;
-                            board[i][j] = null;
-
-                            if (score < bestScore) {
-                                bestScore = score;
-                                move = { i, j, score: bestScore };
-                            }
-                        }
-                    }
-                }
-                return move;
-            }
-        }
-
-        resetButton.addEventListener('click', function() {
-            location.reload();
-        });
-
-        cells.forEach((cell, index) => {
-            cell.addEventListener('click', function() {
-                if (board[Math.floor(index / 3)][index % 3] || checkWin(board, 'X') || checkWin(board, 'O')) {
-                    return;
-                }
-                turn++;
-                board[Math.floor(index / 3)][index % 3] = 'X';
-                cell.classList.add('x');
-
-                if (checkWin(board, 'X')) {
-                    winMessage.textContent = 'You Win';
-                    message.classList.add('active');
-                } else if (turn < 9) {
-                    turnDisplay.textContent = 'AI\'s Turn';
-                    setTimeout(function() {
-                        let { i, j } = minimax(board, turn, true);
-                        board[i][j] = 'O';
-                        cells[i * 3 + j].classList.add('o');
-                        turn++;
-
-                        if (checkWin(board, 'O')) {
-                            winMessage.textContent = 'AI Wins';
-                            message.classList.add('active');
-                        } else if(turn === 9 && Math.random() > 0.5){
-                            let emptyCells = cells.filter((cell, index) => board[Math.floor(index / 3)][index % 3] === null);
-                            let cheatCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                            cheatCell.classList.add('o', 'animated');
-                            setTimeout(() => {
-                                cheatCell.classList.remove('animated');
-                                winMessage.textContent = 'AI Wins';
-                                message.classList.add('active');
-                            }, 2000);
-                        } else {
-                            turnDisplay.textContent = 'Your Turn';
-                        }
-                    }, 500);
-                } else {
-                    winMessage.textContent = 'Draw';
-                    message.classList.add('active');
-                }
-            });
-        });
-
-        // AI starts 50% of the time
-        if(Math.random() > 0.5) {
-            let i = Math.floor(Math.random() * 3);
-            let j = Math.floor(Math.random() * 3);
-            board[i][j] = 'O';
-            cells[i * 3 + j].classList.add('o');
-            turn++;
-            turnDisplay.textContent = 'Your Turn';
-        }
+        // ... rest of your JavaScript code ...
     </script>
 </body>
 </html>
