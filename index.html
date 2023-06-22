@@ -149,28 +149,113 @@
         var counterDisplay = document.getElementById('counter');
         var aiWins = 0;
         var playerWins = 0;
-        
-        // ... rest of your JavaScript code ... 
 
-        // Update game result
-        if (checkWin(board, 'O')) {
-            aiWins++;
-            winMessage.textContent = 'AI Wins';
-            message.classList.add('active');
-        } else if (checkWin(board, 'X')) {
-            playerWins++;
-            winMessage.textContent = 'You Win';
-            message.classList.add('active');
-        } else if (turn === 9) {
-            aiWins++;
-            winMessage.textContent = 'AI Wins';
-            message.classList.add('active');
+        function resetBoard() {
+            board = Array(3).fill().map(() => Array(3).fill(null));
+            cells.forEach(cell => cell.className = 'cell');
+            message.classList.remove('active');
+            turn = 0;
+
+            if(Math.random() > 0.5) {
+                let i = Math.floor(Math.random() * 3);
+                let j = Math.floor(Math.random() * 3);
+                board[i][j] = 'O';
+                cells[i * 3 + j].classList.add('o');
+                turn++;
+                turnDisplay.textContent = 'Your Turn';
+            } else {
+                turnDisplay.textContent = 'Your Turn';
+            }
         }
 
-        // Update score counter
-        counterDisplay.textContent = `AI: ${aiWins} | Player: ${playerWins}`;
+        function checkWin(board, player) {
+            const wins = [
+                [[0, 0], [0, 1], [0, 2]],
+                [[1, 0], [1, 1], [1, 2]],
+                [[2, 0], [2, 1], [2, 2]],
+                [[0, 0], [1, 0], [2, 0]],
+                [[0, 1], [1, 1], [2, 1]],
+                [[0, 2], [1, 2], [2, 2]],
+                [[0, 0], [1, 1], [2, 2]],
+                [[0, 2], [1, 1], [2, 0]]
+            ];
+            for (let win of wins) {
+                if (win.every(([i, j]) => board[i][j] === player)) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
-        // ... rest of your JavaScript code ...
+        function minimax(board, depth, isMaximizingPlayer) {
+            if (checkWin(board, 'O')) return { score: 1, i: null, j: null };
+            if (checkWin(board, 'X')) return { score: -1, i: null, j: null };
+            if (depth === 9) return { score: 0, i: null, j: null };
+
+            let bestScore = isMaximizingPlayer ? -Infinity : Infinity;
+            let move = { i: null, j: null };
+
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (board[i][j] === null) {
+                        board[i][j] = isMaximizingPlayer ? 'O' : 'X';
+                        let score = minimax(board, depth + 1, !isMaximizingPlayer).score;
+                        board[i][j] = null;
+                        if (isMaximizingPlayer && score > bestScore) {
+                            bestScore = score;
+                            move = { i, j };
+                        } else if (!isMaximizingPlayer && score < bestScore) {
+                            bestScore = score;
+                            move = { i, j };
+                        }
+                    }
+                }
+            }
+
+            return { score: bestScore, ...move };
+        }
+
+        resetButton.addEventListener('click', resetBoard);
+
+        cells.forEach((cell, index) => {
+            cell.addEventListener('click', () => {
+                let i = Math.floor(index / 3);
+                let j = index % 3;
+
+                if (board[i][j] === null && !checkWin(board, 'O') && !checkWin(board, 'X')) {
+                    board[i][j] = 'X';
+                    cell.classList.add('x');
+                    turn++;
+                    turnDisplay.textContent = 'AI Turn';
+
+                    if (!checkWin(board, 'X')) {
+                        let { i, j } = minimax(board, turn, true);
+                        board[i][j] = 'O';
+                        cells[i * 3 + j].classList.add('o');
+                        turn++;
+                        turnDisplay.textContent = 'Your Turn';
+                    }
+                }
+
+                if (checkWin(board, 'O')) {
+                    aiWins++;
+                    winMessage.textContent = 'AI Wins';
+                    message.classList.add('active');
+                } else if (checkWin(board, 'X')) {
+                    playerWins++;
+                    winMessage.textContent = 'You Win';
+                    message.classList.add('active');
+                } else if (turn === 9) {
+                    aiWins++;
+                    winMessage.textContent = 'AI Wins';
+                    message.classList.add('active');
+                }
+
+                counterDisplay.textContent = `AI: ${aiWins} | Player: ${playerWins}`;
+            });
+        });
+
+        resetBoard();
     </script>
 </body>
 </html>
