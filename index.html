@@ -21,7 +21,6 @@
             gap: 10px;
             width: 90vmin;
             height: 90vmin;
-            position: relative;
         }
         .cell {
             background-color: darkgreen;
@@ -108,9 +107,8 @@
         }
         #counter {
             position: fixed;
-            top: 100px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 10px;
+            right: 10px;
             background-color: darkgreen;
             color: white;
             padding: 20px;
@@ -123,7 +121,7 @@
 <body>
     <div id="message">
         <h2 id="winMessage"></h2>
-        <div id="counter">AI: 0 | Player: 0</div>
+        <div id="counter">AI: 0 - You: 0</div>
         <button id="reset">Reset</button>
     </div>
     <div id="turn">Your Turn</div>
@@ -147,40 +145,32 @@
         var resetButton = document.getElementById('reset');
         var turnDisplay = document.getElementById('turn');
         var counterDisplay = document.getElementById('counter');
-        var aiWins = 0;
-        var playerWins = 0;
+        var aiWins = localStorage.getItem('aiWins') || 0;
+        var userWins = localStorage.getItem('userWins') || 0;
 
-        function resetBoard() {
-            board = Array(3).fill().map(() => Array(3).fill(null));
-            cells.forEach(cell => cell.className = 'cell');
-            message.classList.remove('active');
-            turn = 0;
-
-            if(Math.random() > 0.5) {
-                let i = Math.floor(Math.random() * 3);
-                let j = Math.floor(Math.random() * 3);
-                board[i][j] = 'O';
-                cells[i * 3 + j].classList.add('o');
-                turn++;
-                turnDisplay.textContent = 'Your Turn';
-            } else {
-                turnDisplay.textContent = 'Your Turn';
-            }
+        function updateCounter() {
+            counterDisplay.textContent = `AI: ${aiWins} - You: ${userWins}`;
         }
 
+        updateCounter();
+
         function checkWin(board, player) {
-            const wins = [
-                [[0, 0], [0, 1], [0, 2]],
-                [[1, 0], [1, 1], [1, 2]],
-                [[2, 0], [2, 1], [2, 2]],
-                [[0, 0], [1, 0], [2, 0]],
-                [[0, 1], [1, 1], [2, 1]],
-                [[0, 2], [1, 2], [2, 2]],
-                [[0, 0], [1, 1], [2, 2]],
-                [[0, 2], [1, 1], [2, 0]]
+            var lines = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
             ];
-            for (let win of wins) {
-                if (win.every(([i, j]) => board[i][j] === player)) {
+
+            for (var i = 0; i < lines.length; i++) {
+                var [a, b, c] = lines[i];
+                if (board[Math.floor(a / 3)][a % 3] === player && 
+                    board[Math.floor(b / 3)][b % 3] === player && 
+                    board[Math.floor(c / 3)][c % 3] === player) {
                     return true;
                 }
             }
@@ -188,74 +178,133 @@
         }
 
         function minimax(board, depth, isMaximizingPlayer) {
-            if (checkWin(board, 'O')) return { score: 1, i: null, j: null };
-            if (checkWin(board, 'X')) return { score: -1, i: null, j: null };
-            if (depth === 9) return { score: 0, i: null, j: null };
+            if (checkWin(board, 'O')) {
+                return { score: 10 - depth };
+            } else if (checkWin(board, 'X')) {
+                return { score: depth - 10 };
+            } else if (depth === 9) {
+                return { score: 0 };
+            }
 
-            let bestScore = isMaximizingPlayer ? -Infinity : Infinity;
-            let move = { i: null, j: null };
+            if (isMaximizingPlayer) {
+                let bestScore = -Infinity;
+                let move = {};
 
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    if (board[i][j] === null) {
-                        board[i][j] = isMaximizingPlayer ? 'O' : 'X';
-                        let score = minimax(board, depth + 1, !isMaximizingPlayer).score;
-                        board[i][j] = null;
-                        if (isMaximizingPlayer && score > bestScore) {
-                            bestScore = score;
-                            move = { i, j };
-                        } else if (!isMaximizingPlayer && score < bestScore) {
-                            bestScore = score;
-                            move = { i, j };
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (board[i][j] === null) {
+                            board[i][j] = 'O';
+                            let score = minimax(board, depth + 1, false).score;
+                            board[i][j] = null;
+
+                            if (score > bestScore) {
+                                bestScore = score;
+                                move = { i, j, score: bestScore };
+                            }
                         }
                     }
                 }
-            }
+                return move;
+            } else {
+                let bestScore = Infinity;
+                let move = {};
 
-            return { score: bestScore, ...move };
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (board[i][j] === null) {
+                            board[i][j] = 'X';
+                            let score = minimax(board, depth + 1, true).score;
+                            board[i][j] = null;
+
+                            if (score < bestScore) {
+                                bestScore = score;
+                                move = { i, j, score: bestScore };
+                            }
+                        }
+                    }
+                }
+                return move;
+            }
         }
 
-        resetButton.addEventListener('click', resetBoard);
+        resetButton.addEventListener('click', function() {
+            location.reload();
+        });
 
         cells.forEach((cell, index) => {
-            cell.addEventListener('click', () => {
-                let i = Math.floor(index / 3);
-                let j = index % 3;
+            cell.addEventListener('click', function() {
+                if (board[Math.floor(index / 3)][index % 3] || checkWin(board, 'X') || checkWin(board, 'O')) {
+                    return;
+                }
+                turn++;
+                board[Math.floor(index / 3)][index % 3] = 'X';
+                cell.classList.add('x');
 
-                if (board[i][j] === null && !checkWin(board, 'O') && !checkWin(board, 'X')) {
-                    board[i][j] = 'X';
-                    cell.classList.add('x');
-                    turn++;
-                    turnDisplay.textContent = 'AI Turn';
-
-                    if (!checkWin(board, 'X')) {
+                if (checkWin(board, 'X')) {
+                    userWins++;
+                    localStorage.setItem('userWins', userWins);
+                    updateCounter();
+                    winMessage.textContent = 'You Win';
+                    message.classList.add('active');
+                } else if (turn < 9) {
+                    turnDisplay.textContent = 'AI\'s Turn';
+                    setTimeout(function() {
                         let { i, j } = minimax(board, turn, true);
                         board[i][j] = 'O';
                         cells[i * 3 + j].classList.add('o');
                         turn++;
-                        turnDisplay.textContent = 'Your Turn';
+
+                        if (checkWin(board, 'O')) {
+                            aiWins++;
+                            localStorage.setItem('aiWins', aiWins);
+                            updateCounter();
+                            winMessage.textContent = 'AI Wins';
+                            message.classList.add('active');
+                        } else if(turn === 9){
+                            // AI cheats
+                            for(let k = 0; k < 9; k++) {
+                                if(board[Math.floor(k / 3)][k % 3] === null) {
+                                    board[Math.floor(k / 3)][k % 3] = 'O';
+                                    cells[k].classList.add('o');
+                                    aiWins++;
+                                    localStorage.setItem('aiWins', aiWins);
+                                    updateCounter();
+                                    winMessage.textContent = 'AI Wins';
+                                    message.classList.add('active');
+                                    break;
+                                }
+                            }
+                        } else {
+                            turnDisplay.textContent = 'Your Turn';
+                        }
+                    }, 500);
+                } else {
+                    // AI cheats
+                    for(let k = 0; k < 9; k++) {
+                        if(board[Math.floor(k / 3)][k % 3] === null) {
+                            board[Math.floor(k / 3)][k % 3] = 'O';
+                            cells[k].classList.add('o');
+                            aiWins++;
+                            localStorage.setItem('aiWins', aiWins);
+                            updateCounter();
+                            winMessage.textContent = 'AI Wins';
+                            message.classList.add('active');
+                            break;
+                        }
                     }
                 }
-
-                if (checkWin(board, 'O')) {
-                    aiWins++;
-                    winMessage.textContent = 'AI Wins';
-                    message.classList.add('active');
-                } else if (checkWin(board, 'X')) {
-                    playerWins++;
-                    winMessage.textContent = 'You Win';
-                    message.classList.add('active');
-                } else if (turn === 9) {
-                    aiWins++;
-                    winMessage.textContent = 'AI Wins';
-                    message.classList.add('active');
-                }
-
-                counterDisplay.textContent = `AI: ${aiWins} | Player: ${playerWins}`;
             });
         });
 
-        resetBoard();
+        // AI starts 50% of the time
+        if(Math.random() > 0.5) {
+            let i = Math.floor(Math.random() * 3);
+            let j = Math.floor(Math.random() * 3);
+            board[i][j] = 'O';
+            cells[i * 3 + j].classList.add('o');
+            turn++;
+            turnDisplay.textContent = 'Your Turn';
+        }
     </script>
 </body>
 </html>
