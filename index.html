@@ -105,6 +105,13 @@
             font-size: 2em;
             transition: all 0.5s ease;
         }
+        .animated {
+            animation: cheat 2s;
+        }
+        @keyframes cheat {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -233,11 +240,15 @@
                         if (checkWin(board, 'O')) {
                             winMessage.textContent = 'AI Wins';
                             message.classList.add('active');
-                        } else if(turn === 9){
-                            winMessage.textContent = 'Draw... wait, AI cheated!';
-                            board[0][0] = 'O';
-                            cells[0].classList.add('o');
-                            message.classList.add('active');
+                        } else if(turn === 9 && Math.random() > 0.5){
+                            let emptyCells = cells.filter((cell, index) => board[Math.floor(index / 3)][index % 3] === null);
+                            let cheatCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                            cheatCell.classList.add('o', 'animated');
+                            setTimeout(() => {
+                                cheatCell.classList.remove('animated');
+                                winMessage.textContent = 'AI Wins';
+                                message.classList.add('active');
+                            }, 2000);
                         } else {
                             turnDisplay.textContent = 'Your Turn';
                         }
