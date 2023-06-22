@@ -26,13 +26,74 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 5em;
-                color: white;
                 border-radius: 10px;
+                position: relative;
+                overflow: hidden;
+            }
+            .cell:before, .cell:after {
+                content: "";
+                position: absolute;
+                background-color: white;
+                transition: all 0.3s ease;
+            }
+            .cell.x:before, .cell.x:after {
+                width: 10px;
+                height: 100%;
+                top: 0;
+                left: calc(50% - 5px);
+            }
+            .cell.x:before {
+                transform: rotate(45deg);
+            }
+            .cell.x:after {
+                transform: rotate(-45deg);
+            }
+            .cell.o:before, .cell.o:after {
+                width: 60%;
+                height: 60%;
+                border-radius: 50%;
+                top: 20%;
+                left: 20%;
+                border: 10px solid white;
+                background-color: transparent;
+            }
+            .cell.o:before {
+                opacity: 1;
+            }
+            .cell.o:after {
+                opacity: 0;
+            }
+            #message {
+                position: fixed;
+                top: 10px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: darkgreen;
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                display: none;
+            }
+            #message.active {
+                display: block;
+            }
+            #reset {
+                background-color: white;
+                color: darkgreen;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-top: 20px;
+                display: inline-block;
             }
         </style>
     </head>
     <body>
+        <div id="message">
+            <h2 id="winMessage"></h2>
+            <button id="reset">Reset</button>
+        </div>
         <div id="board">
             <div class="cell"></div>
             <div class="cell"></div>
@@ -49,6 +110,9 @@
             var cells = Array.from(document.getElementsByClassName('cell'));
             var board = Array(3).fill().map(() => Array(3).fill(null));
             var turn = 0;
+            var winMessage = document.getElementById('winMessage');
+            var message = document.getElementById('message');
+            var resetButton = document.getElementById('reset');
 
             function checkWin() {
                 var lines = [
@@ -73,6 +137,10 @@
                 return false;
             }
 
+            resetButton.addEventListener('click', function() {
+                location.reload();
+            });
+
             cells.forEach((cell, index) => {
                 cell.addEventListener('click', function() {
                     if (board[Math.floor(index / 3)][index % 3] || checkWin()) {
@@ -80,12 +148,10 @@
                     }
                     turn++;
                     board[Math.floor(index / 3)][index % 3] = turn % 2 === 0 ? 'X' : 'O';
-                    cell.textContent = board[Math.floor(index / 3)][index % 3];
+                    cell.classList.add(board[Math.floor(index / 3)][index % 3].toLowerCase());
                     if (checkWin()) {
-                        setTimeout(function() {
-                            alert(turn % 2 === 0 ? 'X Wins' : 'O Wins');
-                            location.reload();
-                        }, 100);
+                        winMessage.textContent = (turn % 2 === 0 ? 'X Wins' : 'O Wins');
+                        message.classList.add('active');
                     }
                 });
             });
