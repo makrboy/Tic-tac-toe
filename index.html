@@ -1,246 +1,263 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tic Tac Toe</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #223;
-      color: #fff;
-      font-family: Arial, sans-serif;
-    }
-    
-    #game-board {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-gap: 10px;
-    }
-    
-    .square {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 40px;
-      width: 100px;
-      height: 100px;
-      background-color: #0f0;
-      cursor: pointer;
-    }
-    
-    #score-board {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 400px;
-      margin-bottom: 20px;
-    }
-    
-    #reset-button {
-      font-size: 18px;
-      padding: 10px 20px;
-      background-color: #0f0;
-      color: #000;
-      border: none;
-      cursor: pointer;
-    }
-    
-    #turn-box {
-      padding: 10px 20px;
-      background-color: #0f0;
-    }
-    
-    .ai-win {
-      color: #f00;
-    }
-    
-    @keyframes remove-player-pieces {
-      0% { transform: translateY(0); opacity: 1; }
-      100% { transform: translateY(-200px); opacity: 0; }
-    }
-    
-    .ai-piece {
-      animation: remove-player-pieces 1s forwards;
-    }
-  </style>
+    <title>Dark Green Tic-Tac-Toe</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        #board {
+            display: grid;
+            grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+            gap: 10px;
+            width: 90vmin;
+            height: 90vmin;
+        }
+        .cell {
+            background-color: darkgreen;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        .cell:before, .cell:after {
+            content: "";
+            position: absolute;
+            background-color: white;
+            transition: all 0.5s ease;
+        }
+        .cell.x:before, .cell.x:after {
+            width: 10px;
+            height: 100%;
+            top: 0;
+            left: calc(50% - 5px);
+        }
+        .cell.x:before {
+            transform: rotate(45deg);
+        }
+        .cell.x:after {
+            transform: rotate(-45deg);
+        }
+        .cell.o:before, .cell.o:after {
+            width: 60%;
+            height: 60%;
+            border-radius: 50%;
+            top: 20%;
+            left: 20%;
+            border: 10px solid white;
+            background-color: transparent;
+        }
+        .cell.o:before {
+            opacity: 1;
+        }
+        .cell.o:after {
+            opacity: 0;
+        }
+        #message {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: darkgreen;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+            font-size: 2em;
+        }
+        #message.active {
+            display: block;
+        }
+        #reset {
+            background-color: white;
+            color: darkgreen;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: inline-block;
+            font-size: 1.5em;
+            transition: all 0.5s ease;
+        }
+        #turn {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: darkgreen;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 2em;
+            transition: all 0.5s ease;
+        }
+    </style>
 </head>
 <body>
-  <div id="score-board">
-    <div id="ai-score">AI: 0</div>
-    <div id="reset-button">Reset</div>
-    <div id="player-score">You: 0</div>
-  </div>
-  <div id="turn-box">Player's Turn</div>
-  <div id="game-board"></div>
-  
-  <script>
-    // Tic Tac Toe game logic
-    const EMPTY = '';
-    const PLAYER = 'X';
-    const AI = 'O';
-    
-    const board = ['', '', '', '', '', '', '', '', ''];
-    let currentPlayer = PLAYER;
-    let gameOver = false;
-    let aiScore = 0;
-    let playerScore = 0;
-    
-    const squares = document.querySelectorAll('.square');
-    const resetButton = document.querySelector('#reset-button');
-    const aiScoreDisplay = document.querySelector('#ai-score');
-    const playerScoreDisplay = document.querySelector('#player-score');
-    const turnBox = document.querySelector('#turn-box');
-    
-    squares.forEach((square, index) => {
-      square.addEventListener('click', () => {
-        if (!gameOver && board[index] === EMPTY) {
-          square.innerText = currentPlayer;
-          board[index] = currentPlayer;
-          square.classList.add('ai-piece');
-          checkGameOver();
-          switchTurn();
-          if (!gameOver) {
-            turnBox.innerText = "AI's Turn";
-            setTimeout(makeAIMove, 500);
-          }
+    <div id="message">
+        <h2 id="winMessage"></h2>
+        <button id="reset">Reset</button>
+    </div>
+    <div id="turn">Your Turn</div>
+    <div id="board">
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+    </div>
+    <script>
+        var cells = Array.from(document.getElementsByClassName('cell'));
+        var board = Array(3).fill().map(() => Array(3).fill(null));
+        var turn = 0;
+        var winMessage = document.getElementById('winMessage');
+        var message = document.getElementById('message');
+        var resetButton = document.getElementById('reset');
+        var turnDisplay = document.getElementById('turn');
+
+        function checkWin(board, player) {
+            var lines = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
+            ];
+
+            for (var i = 0; i < lines.length; i++) {
+                var [a, b, c] = lines[i];
+                if (board[Math.floor(a / 3)][a % 3] === player && 
+                    board[Math.floor(b / 3)][b % 3] === player && 
+                    board[Math.floor(c / 3)][c % 3] === player) {
+                    return true;
+                }
+            }
+            return false;
         }
-      });
-    });
-    
-    resetButton.addEventListener('click', resetGame);
-    
-    function checkGameOver() {
-      const winningCombinations = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
-        [0, 4, 8], [2, 4, 6]              // Diagonals
-      ];
-    
-      for (const combination of winningCombinations) {
-        const [a, b, c] = combination;
-        if (board[a] !== EMPTY && board[a] === board[b] && board[a] === board[c]) {
-          gameOver = true;
-          if (currentPlayer === AI) {
-            aiScore++;
-            aiScoreDisplay.innerText = `AI: ${aiScore}`;
-            turnBox.innerText = 'AI Wins!';
-          } else {
-            playerScore++;
-            playerScoreDisplay.innerText = `You: ${playerScore}`;
-            turnBox.innerText = 'You Win!';
-          }
-          break;
+
+        function minimax(board, depth, isMaximizingPlayer) {
+            if (checkWin(board, 'O')) {
+                return { score: 10 - depth };
+            } else if (checkWin(board, 'X')) {
+                return { score: depth - 10 };
+            } else if (depth === 9) {
+                return { score: 0 };
+            }
+
+            if (isMaximizingPlayer) {
+                let bestScore = -Infinity;
+                let move = {};
+
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (board[i][j] === null) {
+                            board[i][j] = 'O';
+                            let score = minimax(board, depth + 1, false).score;
+                            board[i][j] = null;
+
+                            if (score > bestScore) {
+                                bestScore = score;
+                                move = { i, j, score: bestScore };
+                            }
+                        }
+                    }
+                }
+                return move;
+            } else {
+                let bestScore = Infinity;
+                let move = {};
+
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (board[i][j] === null) {
+                            board[i][j] = 'X';
+                            let score = minimax(board, depth + 1, true).score;
+                            board[i][j] = null;
+
+                            if (score < bestScore) {
+                                bestScore = score;
+                                move = { i, j, score: bestScore };
+                            }
+                        }
+                    }
+                }
+                return move;
+            }
         }
-      }
-    
-      if (!gameOver && board.every(square => square !== EMPTY)) {
-        gameOver = true;
-        turnBox.innerText = 'Tie!';
-        setTimeout(fillWithAIPieces, 2000);
-      }
-    }
-    
-    function switchTurn() {
-      currentPlayer = currentPlayer === PLAYER ? AI : PLAYER;
-    }
-    
-    function makeAIMove() {
-      if (!gameOver) {
-        const bestMove = getBestMove();
-        const square = squares[bestMove];
-        square.innerText = currentPlayer;
-        board[bestMove] = currentPlayer;
-        square.classList.add('ai-piece');
-        checkGameOver();
-        switchTurn();
-        if (!gameOver) {
-          turnBox.innerText = "Player's Turn";
+
+        resetButton.addEventListener('click', function() {
+            location.reload();
+        });
+
+        cells.forEach((cell, index) => {
+            cell.addEventListener('click', function() {
+                if (board[Math.floor(index / 3)][index % 3] || checkWin(board, 'X') || checkWin(board, 'O')) {
+                    return;
+                }
+                turn++;
+                board[Math.floor(index / 3)][index % 3] = 'X';
+                cell.classList.add('x');
+
+                if (checkWin(board, 'X')) {
+                    winMessage.textContent = 'You Win';
+                    message.classList.add('active');
+                } else if (turn < 9) {
+                    turnDisplay.textContent = 'AI\'s Turn';
+                    setTimeout(function() {
+                        let { i, j } = minimax(board, turn, true);
+                        board[i][j] = 'O';
+                        cells[i * 3 + j].classList.add('o');
+                        turn++;
+
+                        if (checkWin(board, 'O')) {
+                            winMessage.textContent = 'AI Wins';
+                            message.classList.add('active');
+                        } else if(turn === 9){
+                            winMessage.textContent = 'Draw... wait, AI cheated!';
+                            board[0][0] = 'O';
+                            cells[0].classList.add('o');
+                            message.classList.add('active');
+                        } else {
+                            turnDisplay.textContent = 'Your Turn';
+                        }
+                    }, 500);
+                } else {
+                    winMessage.textContent = 'Draw';
+                    message.classList.add('active');
+                }
+            });
+        });
+
+        // AI starts 50% of the time
+        if(Math.random() > 0.5) {
+            let i = Math.floor(Math.random() * 3);
+            let j = Math.floor(Math.random() * 3);
+            board[i][j] = 'O';
+            cells[i * 3 + j].classList.add('o');
+            turn++;
+            turnDisplay.textContent = 'Your Turn';
         }
-      }
-    }
-    
-    function getBestMove() {
-      let bestScore = -Infinity;
-      let bestMove;
-    
-      for (let i = 0; i < 9; i++) {
-        if (board[i] === EMPTY) {
-          board[i] = currentPlayer;
-          const score = minimax(board, 0, false);
-          board[i] = EMPTY;
-    
-          if (score > bestScore) {
-            bestScore = score;
-            bestMove = i;
-          }
-        }
-      }
-    
-      return bestMove;
-    }
-    
-    function minimax(board, depth, isMaximizing) {
-      const scores = {
-        X: -1,
-        O: 1,
-        tie: 0
-      };
-    
-      const result = checkGameOver();
-    
-      if (result !== null) {
-        return scores[result];
-      }
-    
-      if (isMaximizing) {
-        let bestScore = -Infinity;
-        for (let i = 0; i < 9; i++) {
-          if (board[i] === EMPTY) {
-            board[i] = AI;
-            const score = minimax(board, depth + 1, false);
-            board[i] = EMPTY;
-            bestScore = Math.max(score, bestScore);
-          }
-        }
-        return bestScore;
-      } else {
-        let bestScore = Infinity;
-        for (let i = 0; i < 9; i++) {
-          if (board[i] === EMPTY) {
-            board[i] = PLAYER;
-            const score = minimax(board, depth + 1, true);
-            board[i] = EMPTY;
-            bestScore = Math.min(score, bestScore);
-          }
-        }
-        return bestScore;
-      }
-    }
-    
-    function fillWithAIPieces() {
-      squares.forEach((square, index) => {
-        if (board[index] === EMPTY) {
-          square.innerText = AI;
-          board[index] = AI;
-        }
-      });
-      turnBox.innerText = 'AI Wins!';
-    }
-    
-    function resetGame() {
-      squares.forEach(square => {
-        square.innerText = '';
-        square.classList.remove('ai-piece');
-      });
-      board.fill(EMPTY);
-      currentPlayer = PLAYER;
-      gameOver = false;
-      turnBox.innerText = "Player's Turn";
-    }
-  </script>
+    </script>
 </body>
 </html>
