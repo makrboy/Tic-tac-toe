@@ -201,8 +201,10 @@
         });
 
         function changeAllXToO() {
+            let timeout = 500;
             cells.forEach((cell, i) => {
                 if (cell.classList.contains('x')) {
+                    timeout += 500:
                     setTimeout(function() {
                         cell.classList.remove('x');
                         cell.classList.add('o');
@@ -212,7 +214,7 @@
                             message.classList.add('active');
                             isGameOver = true;
                         }
-                    }, 500);
+                    }, timeout);
                 }
             });
         }
