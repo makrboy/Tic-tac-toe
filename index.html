@@ -15,17 +15,6 @@
             overflow: hidden;
             font-family: Arial, sans-serif;
         }
-        #score {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background-color: darkgreen;
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            font-size: 2em;
-            transition: all 0.5s ease;
-        }
         #board {
             display: grid;
             grid-template: repeat(3, 1fr) / repeat(3, 1fr);
@@ -119,7 +108,6 @@
     </style>
 </head>
 <body>
-    <div id="score">Score: 0</div>
     <div id="message">
         <h2 id="winMessage"></h2>
         <button id="reset">Reset</button>
@@ -144,80 +132,107 @@
         var message = document.getElementById('message');
         var resetButton = document.getElementById('reset');
         var turnDisplay = document.getElementById('turn');
-        var scoreDisplay = document.getElementById('score');
-
-        // Score always 0
-        scoreDisplay.textContent = 'Score: 0';
-
-        function reset() {
-            cells.forEach(cell => cell.className = 'cell');
-            board = Array(3).fill().map(() => Array(3).fill(null));
-            turn = 0;
-            winMessage.textContent = '';
-            message.classList.remove('active');
-            turnDisplay.textContent = 'Your Turn';
-        }
+        var isGameOver = false;
 
         function checkWin(board, player) {
-            var wins = [
-                [[0, 0], [0, 1], [0, 2]],
-                [[1, 0], [1, 1], [1, 2]],
-                [[2, 0], [2, 1], [2, 2]],
-                [[0, 0], [1, 0], [2, 0]],
-                [[0, 1], [1, 1], [2, 1]],
-                [[0, 2], [1, 2], [2, 2]],
-                [[0, 0], [1, 1], [2, 2]],
-                [[0, 2], [1, 1], [2, 0]]
+            var lines = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
             ];
-            return wins.some(win => win.every(([x, y]) => board[y][x] == player));
+
+            for (var i = 0; i < lines.length; i++) {
+                var [a, b, c] = lines[i];
+                if (board[Math.floor(a / 3)][a % 3] === player && 
+                    board[Math.floor(b / 3)][b % 3] === player && 
+                    board[Math.floor(c / 3)][c % 3] === player) {
+                    return true;
+                }
+            }
+            return false;
         }
 
-        resetButton.addEventListener('click', reset);
+        resetButton.addEventListener('click', function() {
+            location.reload();
+        });
 
         cells.forEach((cell, index) => {
             cell.addEventListener('click', function() {
-                if (cell.className == 'cell' && !message.classList.contains('active')) {
-                    cell.classList.add('x');
-                    board[Math.floor(index / 3)][index % 3] = 'X';
-                    turn++;
-                    if (checkWin(board, 'X')) {
-                        winMessage.textContent = 'You Win';
-                        message.classList.add('active');
-                        return;
+                if (isGameOver || board[Math.floor(index / 3)][index % 3]) {
+                    return;
+                }
+
+                turn++;
+                board[Math.floor(index / 3)][index % 3] = 'X';
+                cell.classList.add('x');
+
+                if (turn === 9) {
+                    setTimeout(changeAllXToO, 500);
+                    return;
+                }
+
+                turnDisplay.textContent = 'AI\'s Turn';
+                setTimeout(function() {
+                    let i = Math.floor(Math.random() * 3);
+                    let j = Math.floor(Math.random() * 3);
+                    while (board[i][j]) {
+                        i = Math.floor(Math.random() * 3);
+                        j = Math.floor(Math.random() * 3);
                     }
-                    if (turn < 9) {
-                        var move;
-                        do {
-                            move = Math.floor(Math.random() * 9);
-                        } while (cells[move].className != 'cell');
-                        cells[move].classList.add('o');
-                        board[Math.floor(move / 3)][move % 3] = 'O';
-                        turn++;
+                    board[i][j] = 'O';
+                    cells[i * 3 + j].classList.add('o');
+                    turn++;
+                    turnDisplay.textContent = 'Your Turn';
+
+                    if (checkWin(board, 'O')) {
+                        winMessage.textContent = 'AI Wins';
+                        message.classList.add('active');
+                        isGameOver = true;
+                    } else if(turn === 9) {
+                        setTimeout(changeAllXToO, 500);
+                    }
+                }, 500);
+            });
+        });
+
+        function changeAllXToO() {
+            cells.forEach((cell, i) => {
+                if (cell.classList.contains('x')) {
+                    setTimeout(function() {
+                        cell.classList.remove('x');
+                        cell.classList.add('o');
+                        board[Math.floor(i / 3)][i % 3] = 'O';
                         if (checkWin(board, 'O')) {
                             winMessage.textContent = 'AI Wins';
                             message.classList.add('active');
-                            return;
+                            isGameOver = true;
                         }
-                    }
-                    if (turn == 9) {
-                        winMessage.textContent = 'Draw';
-                        // Change all Xs to Os until the AI wins
-                        cells.forEach((cell, i) => {
-                            if (cell.classList.contains('x')) {
-                                cell.classList.remove('x');
-                                cell.classList.add('o');
-                                board[Math.floor(i / 3)][i % 3] = 'O';
-                                if (checkWin(board, 'O')) {
-                                    winMessage.textContent = 'AI Wins';
-                                    message.classList.add('active');
-                                    return;
-                                }
-                            }
-                        });
-                    }
+                    }, 500);
                 }
             });
-        });
+        }
+
+        // AI starts 50% of the time
+        if(Math.random() > 0.5) {
+            turnDisplay.textContent = 'AI\'s Turn';
+            setTimeout(function() {
+                let i = Math.floor(Math.random() * 3);
+                let j = Math.floor(Math.random() * 3);
+                while (board[i][j]) {
+                    i = Math.floor(Math.random() * 3);
+                    j = Math.floor(Math.random() * 3);
+                }
+                board[i][j] = 'O';
+                cells[i * 3 + j].classList.add('o');
+                turn++;
+                turnDisplay.textContent = 'Your Turn';
+            }, 500);
+        }
     </script>
 </body>
 </html>
