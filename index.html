@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -105,13 +106,6 @@
             font-size: 2em;
             transition: all 0.5s ease;
         }
-        #score {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            color: white;
-            font-size: 1.2em;
-        }
     </style>
 </head>
 <body>
@@ -120,7 +114,6 @@
         <button id="reset">Reset</button>
     </div>
     <div id="turn">Your Turn</div>
-    <div id="score">AI Wins: <span id="aiWins">0</span></div>
     <div id="board">
         <div class="cell"></div>
         <div class="cell"></div>
@@ -141,15 +134,7 @@
         var resetButton = document.getElementById('reset');
         var turnDisplay = document.getElementById('turn');
         var isGameOver = false;
-        var aiWinsElement = document.getElementById('aiWins');
-        var aiWinsCount = parseInt(localStorage.getItem('aiWins')) || 0;
-
-        function incrementAiWins() {
-            aiWinsCount++;
-            aiWinsElement.textContent = aiWinsCount;
-            localStorage.setItem('aiWins', aiWinsCount);
-        }
-
+        
         function minimax(board, depth, isMaximizingPlayer) {
             if (checkWin(board, 'O')) {
                 return { score: 10 - depth };
@@ -199,7 +184,7 @@
                 return move;
             }
         }
-
+        
         function checkWin(board, player) {
             var lines = [
                 [0, 1, 2],
@@ -254,7 +239,6 @@
                         winMessage.textContent = 'AI Wins';
                         message.classList.add('active');
                         isGameOver = true;
-                        incrementAiWins();
                     } else if(turn === 9) {
                         changeAllXToO();
                     }
@@ -274,13 +258,13 @@
                             winMessage.textContent = 'AI Wins';
                             message.classList.add('active');
                             isGameOver = true;
-                            incrementAiWins();
-                        }}
+                        };}
                     }, Math.floor(Math.random()*10+1)*250);
                 }
             });
         }
 
+        // AI starts 50% of the time
         if(Math.random() > 0.5) {
             turnDisplay.textContent = 'AI\'s Turn';
             setTimeout(function() {
