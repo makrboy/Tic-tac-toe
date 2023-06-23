@@ -133,7 +133,57 @@
         var resetButton = document.getElementById('reset');
         var turnDisplay = document.getElementById('turn');
         var isGameOver = false;
+        
+        function minimax(board, depth, isMaximizingPlayer) {
+            if (checkWin(board, 'O')) {
+                return { score: 10 - depth };
+            } else if (checkWin(board, 'X')) {
+                return { score: depth - 10 };
+            } else if (depth === 9) {
+                return { score: 0 };
+            }
 
+            if (isMaximizingPlayer) {
+                let bestScore = -Infinity;
+                let move = {};
+
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (board[i][j] === null) {
+                            board[i][j] = 'O';
+                            let score = minimax(board, depth + 1, false).score;
+                            board[i][j] = null;
+
+                            if (score > bestScore) {
+                                bestScore = score;
+                                move = { i, j, score: bestScore };
+                            }
+                        }
+                    }
+                }
+                return move;
+            } else {
+                let bestScore = Infinity;
+                let move = {};
+
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (board[i][j] === null) {
+                            board[i][j] = 'X';
+                            let score = minimax(board, depth + 1, true).score;
+                            board[i][j] = null;
+
+                            if (score < bestScore) {
+                                bestScore = score;
+                                move = { i, j, score: bestScore };
+                            }
+                        }
+                    }
+                }
+                return move;
+            }
+        }
+        
         function checkWin(board, player) {
             var lines = [
                 [0, 1, 2],
