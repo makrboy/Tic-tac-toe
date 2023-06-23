@@ -172,7 +172,7 @@
                 cell.classList.add('x');
 
                 if (turn === 9) {
-                    setTimeout(changeAllXToO, 500);
+                    changeAllXToO();
                     return;
                 }
 
@@ -194,7 +194,7 @@
                         message.classList.add('active');
                         isGameOver = true;
                     } else if(turn === 9) {
-                        setTimeout(changeAllXToO, 500);
+                        changeAllXToO();
                     }
                 }, 500);
             });
