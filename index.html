@@ -121,107 +121,196 @@
 <body>
     <div id="board"></div>
     <div id="message">
-        <div id="winMessage"></div>
+        <span id="winMessage"></span>
         <button id="reset">Play Again</button>
     </div>
     <div id="turn">Your Turn</div>
-    <div id="counter">AI: 0 - You: 0</div>
+    <div id="counter">0 - 0</div>
     <script>
-        const board = document.querySelector('#board');
-        const cells = Array.from({ length: 9 }, () => document.createElement('div'));
-        const winMessage = document.querySelector('#winMessage');
-        const message = document.querySelector('#message');
-        const reset = document.querySelector('#reset');
-        const turn = document.querySelector('#turn');
-        const counter = document.querySelector('#counter');
-        const lines = [
-            [0, 1, 2],
-            [3, 4, 5],
-            [6, 7, 8],
-            [0, 3, 6],
-            [1, 4, 7],
-            [2, 5, 8],
-            [0, 4, 8],
-            [2, 4, 6]
-        ];
-        let aiWins = Number(localStorage.getItem('aiWins') || 0);
-        let playerWins = Number(localStorage.getItem('playerWins') || 0);
-        let currentTurn = 0;
+        var board, turn, cells, message, winMessage, reset, turnDisplay, counter;
+        var aiWins = localStorage.getItem('aiWins') || 0;
+        var playerWins = localStorage.getItem('playerWins') || 0;
 
-        cells.forEach(cell => {
-            cell.classList.add('cell');
-            board.appendChild(cell);
-        });
+        window.onload = function() {
+            board = new Array(3).fill(null).map(() => new Array(3).fill(null));
+            turn = 0;
+            cells = Array.from({ length: 9 }, (_, i) => {
+                var cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.addEventListener('click', handleClick);
+                return cell;
+            });
+            message = document.getElementById('message');
+            winMessage = document.getElementById('winMessage');
+            reset = document.getElementById('reset');
+            turnDisplay = document.getElementById('turn');
+            counter = document.getElementById('counter');
+
+            document.getElementById('board').append(...cells);
+            reset.addEventListener('click', resetGame);
+            updateCounter();
+            resetGame();
+        };
 
         function updateCounter() {
-            counter.textContent = `AI: ${aiWins} - You: ${playerWins}`;
+            counter.textContent = `${playerWins} - ${aiWins}`;
         }
 
-        function aiCheat() {
-            var oCells = cells.filter(cell => cell.classList.contains('o'));
-            var emptyCells = cells.filter(cell => !cell.classList.contains('x') && !cell.classList.contains('o'));
-            oCells[0].classList.remove('o');
-            emptyCells[0].classList.add('o');
+        function resetGame() {
+            board = new Array(3).fill(null).map(() => new Array(3).fill(null));
+            turn = 0;
+            cells.forEach(cell => cell.className = 'cell');
+            message.classList.remove('active');
+            turnDisplay.textContent = 'Your Turn';
         }
 
         function handleClick(event) {
-            if (event.target.classList.contains('x') || event.target.classList.contains('o')) {
+            var index = cells.indexOf(event.target);
+            var i = Math.floor(index / 3);
+            var j = index % 3;
+
+            if (board[i][j] || checkWin(board, 'X') || checkWin(board, 'O')) {
                 return;
             }
-            event.target.classList.add(currentTurn % 2 === 0 ? 'x' : 'o');
-            const board = cells.map(cell => cell.classList.contains('x') ? 'X' : (cell.classList.contains('o') ? 'O' : null));
-            if (checkWin(board)) {
-                if (currentTurn % 2 === 0) {
-                    winMessage.textContent = 'You win!';
-                    playerWins++;
-                    localStorage.setItem('playerWins', playerWins);
-                } else {
-                    winMessage.textContent = 'AI wins!';
+
+            board[i][j] = 'X';
+            event.target.classList.add('x');
+            turn++;
+
+            if (checkWin(board, 'X')) {
+                winMessage.textContent = 'You win!';
+                message.classList.add('active');
+                playerWins++;
+                localStorage.setItem('playerWins', playerWins);
+                updateCounter();
+                return;
+            }
+
+            turnDisplay.textContent = 'AI\'s Turn';
+
+            setTimeout(() => {
+                if (checkTie(board)) {
+                    cheat();
+                    winMessage.textContent = 'AI wins by cheating!';
+                    message.classList.add('active');
                     aiWins++;
                     localStorage.setItem('aiWins', aiWins);
+                    updateCounter();
+                } else {
+                    var { i, j } = minimax(board, turn, true);
+                    board[i][j] = 'O';
+                    cells[i * 3 + j].classList.add('o');
+                    turn++;
+
+                    if (checkWin(board, 'O')) {
+                        winMessage.textContent = 'AI wins!';
+                        message.classList.add('active');
+                        aiWins++;
+                        localStorage.setItem('aiWins', aiWins);
+                        updateCounter();
+                    } else if (checkTie(board)) {
+                        cheat();
+                        winMessage.textContent = 'AI wins by cheating!';
+                        message.classList.add('active');
+                        aiWins++;
+                        localStorage.setItem('aiWins', aiWins);
+                        updateCounter();
+                    } else {
+                        turnDisplay.textContent = 'Your Turn';
+                    }
                 }
-                message.classList.add('active');
-                updateCounter();
-                return;
-            }
-            if (checkTie(board)) {
-                aiCheat();
-                winMessage.textContent = 'AI wins by cheating!';
-                message.classList.add('active');
-                aiWins++;
-                localStorage.setItem('aiWins', aiWins);
-                updateCounter();
-                return;
-            }
-            currentTurn++;
-            turn.textContent = currentTurn % 2 === 0 ? 'Your Turn' : 'AI\'s Turn';
-            if (currentTurn % 2 !== 0) {
-                setTimeout(() => {
-                    const emptyCells = cells.filter(cell => !cell.classList.contains('x') && !cell.classList.contains('o'));
-                    const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                    randomCell.click();
-                }, 500);
+            }, 500);
+        }
+
+        function cheat() {
+            for (var i = 0; i < 3; i++) {
+                for (var j = 0; j < 3; j++) {
+                    if (!board[i][j]) {
+                        board[i][j] = 'O';
+                        cells[i * 3 + j].classList.add('o');
+                        turn++;
+                    }
+                }
             }
         }
 
-        function checkWin(board) {
-            return lines.some(line => line.every(index => board[index] === 'X')) || lines.some(line => line.every(index => board[index] === 'O'));
+        function minimax(board, turn, isMax) {
+            if (checkWin(board, 'X')) {
+                return { score: -10 + turn };
+            }
+
+            if (checkWin(board, 'O')) {
+                return { score: 10 - turn };
+            }
+
+            if (checkTie(board)) {
+                return { score: 0 };
+            }
+
+            var bestMove;
+
+            if (isMax) {
+                var maxEval = -Infinity;
+                for (var i = 0; i < 3; i++) {
+                    for (var j = 0; j < 3; j++) {
+                        if (!board[i][j]) {
+                            board[i][j] = 'O';
+                            var evaluation = minimax(board, turn + 1, false).score;
+                            board[i][j] = null;
+
+                            if (evaluation > maxEval) {
+                                maxEval = evaluation;
+                                bestMove = { i, j, score: maxEval };
+                            }
+                        }
+                    }
+                }
+            } else {
+                var minEval = Infinity;
+                for (var i = 0; i < 3; i++) {
+                    for (var j = 0; j < 3; j++) {
+                        if (!board[i][j]) {
+                            board[i][j] = 'X';
+                            var evaluation = minimax(board, turn + 1, true).score;
+                            board[i][j] = null;
+
+                            if (evaluation < minEval) {
+                                minEval = evaluation;
+                                bestMove = { i, j, score: minEval };
+                            }
+                        }
+                    }
+                }
+            }
+
+            return bestMove;
+        }
+
+        function checkWin(board, player) {
+            for (var i = 0; i < 3; i++) {
+                if (board[i][0] === player && board[i][1] === player && board[i][2] === player) {
+                    return true;
+                }
+
+                if (board[0][i] === player && board[1][i] === player && board[2][i] === player) {
+                    return true;
+                }
+            }
+
+            if (board[0][0] === player && board[1][1] === player && board[2][2] === player) {
+                return true;
+            }
+
+            if (board[0][2] === player && board[1][1] === player && board[2][0] === player) {
+                return true;
+            }
+
+            return false;
         }
 
         function checkTie(board) {
-            return board.every(cell => cell !== null);
+            return board.every(row => row.every(cell => cell));
         }
-
-        function resetBoard() {
-            cells.forEach(cell => cell.classList.remove('x', 'o'));
-            currentTurn = 0;
-            turn.textContent = 'Your Turn';
-            message.classList.remove('active');
-        }
-
-        cells.forEach(cell => cell.addEventListener('click', handleClick));
-        reset.addEventListener('click', resetBoard);
-        updateCounter();
     </script>
 </body>
 </html>
