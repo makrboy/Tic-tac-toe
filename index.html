@@ -1,58 +1,118 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <title>Dark Green Tic-Tac-Toe</title>
     <style>
-        body {
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            color: white;
             display: flex;
-            justify-content: center;
             align-items: center;
-            height: 100vh;
-            background-color: #000000;
+            justify-content: center;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
         }
-
+        #board {
+            display: grid;
+            grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+            gap: 10px;
+            width: 90vmin;
+            height: 90vmin;
+        }
         .cell {
-            width: 60px;
-            height: 60px;
-            border: 1px solid #00ff00;
-            display: inline-flex;
+            background-color: darkgreen;
+            display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2em;
-            color: #00ff00;
-            cursor: pointer;
+            border-radius: 10px;
             position: relative;
-            transition: all 0.5s;
+            overflow: hidden;
+            transition: all 0.5s ease;
         }
-
-        .x {
-            animation: xToO 0.5s forwards;
+        .cell:before, .cell:after {
+            content: "";
+            position: absolute;
+            background-color: white;
+            transition: all 0.5s ease;
         }
-
-        .o {
-            animation: oToX 0.5s forwards;
+        .cell.x:before, .cell.x:after {
+            width: 10px;
+            height: 100%;
+            top: 0;
+            left: calc(50% - 5px);
         }
-
-        @keyframes xToO {
-            0% {
-                content: 'X';
-            }
-            100% {
-                content: 'O';
-            }
+        .cell.x:before {
+            transform: rotate(45deg);
         }
-
-        @keyframes oToX {
-            0% {
-                content: 'O';
-            }
-            100% {
-                content: 'X';
-            }
+        .cell.x:after {
+            transform: rotate(-45deg);
         }
-
+        .cell.o:before, .cell.o:after {
+            width: 60%;
+            height: 60%;
+            border-radius: 50%;
+            top: 20%;
+            left: 20%;
+            border: 10px solid white;
+            background-color: transparent;
+        }
+        .cell.o:before {
+            opacity: 1;
+        }
+        .cell.o:after {
+            opacity: 0;
+        }
+        #message {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: darkgreen;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+            font-size: 2em;
+        }
+        #message.active {
+            display: block;
+        }
+        #reset {
+            background-color: white;
+            color: darkgreen;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: inline-block;
+            font-size: 1.5em;
+            transition: all 0.5s ease;
+        }
+        #turn {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: darkgreen;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 2em;
+            transition: all 0.5s ease;
+        }
     </style>
 </head>
 <body>
+    <div id="message">
+        <h2 id="winMessage"></h2>
+        <button id="reset">Reset</button>
+    </div>
+    <div id="turn">Your Turn</div>
     <div id="board">
         <div class="cell"></div>
         <div class="cell"></div>
@@ -65,117 +125,70 @@
         <div class="cell"></div>
     </div>
     <script>
-        var cells = Array.from(document.getElementsByClassName('cell'));
-        var board = Array(3).fill().map(() => Array(3).fill(null));
-        var turn = 0;
+        const cells = Array.from(document.querySelectorAll('#board .cell'));
+        const turnDisplay = document.getElementById('turn');
+        const winMessage = document.getElementById('winMessage');
+        const message = document.getElementById('message');
+        const reset = document.getElementById('reset');
+        let board = ['','','','','','','','',''];
+        let turn = 0;
 
-        function checkWin(board, player) {
-            var lines = [
-                [0, 1, 2],
-                [3, 4, 5],
-                [6, 7, 8],
-                [0, 3, 6],
-                [1, 4, 7],
-                [2, 5, 8],
-                [0, 4, 8],
-                [2, 4, 6]
-            ];
+        const checkWin = function(b, player) {
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            return wins.some(win => win.every(i => b[i] == player));
+        };
 
-            for (var i = 0; i < lines.length; i++) {
-                var [a, b, c] = lines[i];
-                if (board[Math.floor(a / 3)][a % 3] === player && 
-                    board[Math.floor(b / 3)][b % 3] === player && 
-                    board[Math.floor(c / 3)][c % 3] === player) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        function minimax(board, depth, isMaximizingPlayer) {
-            if (checkWin(board, 'O')) {
-                return { score: 10 - depth };
-            } else if (checkWin(board, 'X')) {
-                return { score: depth - 10 };
-            } else if (depth === 9) {
-                return { score: 0 };
-            }
-
-            if (isMaximizingPlayer) {
-                let bestScore = -Infinity;
-                let move = {};
-
-                for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        if (!board[i][j]) {
-                            board[i][j] = 'O';
-                            let { score } = minimax(board, depth + 1, false);
-                            board[i][j] = null;
-
-                            if (score > bestScore) {
-                                bestScore = score;
-                                move = { i, j };
-                            }
-                        }
-                    }
-                }
-
-                return { score: bestScore, ...move };
-            } else {
-                let bestScore = Infinity;
-                let move = {};
-
-                for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        if (!board[i][j]) {
-                            board[i][j] = 'X';
-                            let { score } = minimax(board, depth + 1, true);
-                            board[i][j] = null;
-
-                            if (score < bestScore) {
-                                bestScore = score;
-                                move = { i, j };
-                            }
-                        }
-                    }
-                }
-
-                return { score: bestScore, ...move };
-            }
-        }
+        reset.addEventListener('click', function() {
+            board = ['','','','','','','','',''];
+            turn = 0;
+            cells.forEach(cell => cell.className = 'cell');
+            message.classList.remove('active');
+            turnDisplay.textContent = 'Your Turn';
+        });
 
         cells.forEach((cell, index) => {
-            cell.addEventListener('click', () => {
-                if (cell.classList.contains('x') || cell.classList.contains('o')) return;
-
-                cell.classList.add('x');
-                board[Math.floor(index / 3)][index % 3] = 'X';
-                turn++;
-
-                if (!checkWin(board, 'X') && turn < 9) {
-                    setTimeout(() => {
-                        var { i, j } = minimax(board, turn, true);
-                        cells[i * 3 + j].classList.remove('x');
-                        cells[i * 3 + j].classList.add('o');
-                        board[i][j] = 'O';
+            cell.addEventListener('click', function() {
+                if (cell.className == 'cell' && !message.classList.contains('active')) {
+                    cell.classList.add('x');
+                    board[index] = 'X';
+                    turn++;
+                    if (checkWin(board, 'X')) {
+                        winMessage.textContent = 'You Win';
+                        message.classList.add('active');
+                    } else if (turn < 9) {
+                        let aiMove = board.findIndex(c => c == '');
+                        cells[aiMove].classList.add('o');
+                        board[aiMove] = 'O';
                         turn++;
-                    }, 500);
-                } else {
-                    let xCells = cells.filter(cell => cell.classList.contains('x'));
-                    let cellIndex = 0;
-                    let intervalId = setInterval(() => {
-                        if (cellIndex >= xCells.length) {
-                            clearInterval(intervalId);
-                        } else {
-                            let cell = xCells[cellIndex++];
-                            cell.classList.remove('x');
-                            cell.classList.add('o');
-                            board[Math.floor(cellIndex / 3)][cellIndex % 3] = 'O';
+                        if (checkWin(board, 'O')) {
+                            winMessage.textContent = 'AI Wins';
+                            message.classList.add('active');
                         }
-                    }, 500);
+                    } else {
+                        let counter = 0;
+                        const addOsInterval = setInterval(function() {
+                            const randomCell = cells[Math.floor(Math.random() * cells.length)];
+                            if (randomCell.className == 'cell') {
+                                randomCell.classList.add('o');
+                                counter++;
+                            }
+                            if (counter >= 50) {
+                                clearInterval(addOsInterval);
+                                winMessage.textContent = 'AI Wins';
+                                message.classList.add('active');
+                            }
+                        }, 100);
+                    }
                 }
             });
         });
+
+        if(Math.random() > 0.5) {
+            let aiMove = board.findIndex(c => c == '');
+            cells[aiMove].classList.add('o');
+            board[aiMove] = 'O';
+            turn++;
+        }
     </script>
 </body>
 </html>
