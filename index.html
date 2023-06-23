@@ -125,69 +125,113 @@
         <div class="cell"></div>
     </div>
     <script>
-        const cells = Array.from(document.querySelectorAll('#board .cell'));
-        const turnDisplay = document.getElementById('turn');
-        const winMessage = document.getElementById('winMessage');
-        const message = document.getElementById('message');
-        const reset = document.getElementById('reset');
-        let board = ['','','','','','','','',''];
-        let turn = 0;
+        var cells = Array.from(document.getElementsByClassName('cell'));
+        var board = Array(3).fill().map(() => Array(3).fill(null));
+        var turn = 0;
+        var winMessage = document.getElementById('winMessage');
+        var message = document.getElementById('message');
+        var resetButton = document.getElementById('reset');
+        var turnDisplay = document.getElementById('turn');
+        var isGameOver = false;
 
-        const checkWin = function(b, player) {
-            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-            return wins.some(win => win.every(i => b[i] == player));
-        };
+        function checkWin(board, player) {
+            var lines = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
+            ];
 
-        reset.addEventListener('click', function() {
-            board = ['','','','','','','','',''];
-            turn = 0;
-            cells.forEach(cell => cell.className = 'cell');
-            message.classList.remove('active');
-            turnDisplay.textContent = 'Your Turn';
+            for (var i = 0; i < lines.length; i++) {
+                var [a, b, c] = lines[i];
+                if (board[Math.floor(a / 3)][a % 3] === player && 
+                    board[Math.floor(b / 3)][b % 3] === player && 
+                    board[Math.floor(c / 3)][c % 3] === player) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        resetButton.addEventListener('click', function() {
+            location.reload();
         });
 
         cells.forEach((cell, index) => {
             cell.addEventListener('click', function() {
-                if (cell.className == 'cell' && !message.classList.contains('active')) {
-                    cell.classList.add('x');
-                    board[index] = 'X';
-                    turn++;
-                    if (checkWin(board, 'X')) {
-                        winMessage.textContent = 'You Win';
-                        message.classList.add('active');
-                    } else if (turn < 9) {
-                        let aiMove = board.findIndex(c => c == '');
-                        cells[aiMove].classList.add('o');
-                        board[aiMove] = 'O';
-                        turn++;
-                        if (checkWin(board, 'O')) {
-                            winMessage.textContent = 'AI Wins';
-                            message.classList.add('active');
-                        }
-                    } else {
-                        let counter = 0;
-                        const addOsInterval = setInterval(function() {
-                            const randomCell = cells[Math.floor(Math.random() * cells.length)];
-                            if (randomCell.className == 'cell') {
-                                randomCell.classList.add('o');
-                                counter++;
-                            }
-                            if (counter >= 50) {
-                                clearInterval(addOsInterval);
-                                winMessage.textContent = 'AI Wins';
-                                message.classList.add('active');
-                            }
-                        }, 100);
-                    }
+                if (isGameOver || board[Math.floor(index / 3)][index % 3]) {
+                    return;
                 }
+
+                turn++;
+                board[Math.floor(index / 3)][index % 3] = 'X';
+                cell.classList.add('x');
+
+                if (turn === 9) {
+                    setTimeout(changeAllXToO, 500);
+                    return;
+                }
+
+                turnDisplay.textContent = 'AI\'s Turn';
+                setTimeout(function() {
+                    let i = Math.floor(Math.random() * 3);
+                    let j = Math.floor(Math.random() * 3);
+                    while (board[i][j]) {
+                        i = Math.floor(Math.random() * 3);
+                        j = Math.floor(Math.random() * 3);
+                    }
+                    board[i][j] = 'O';
+                    cells[i * 3 + j].classList.add('o');
+                    turn++;
+                    turnDisplay.textContent = 'Your Turn';
+
+                    if (checkWin(board, 'O')) {
+                        winMessage.textContent = 'AI Wins';
+                        message.classList.add('active');
+                        isGameOver = true;
+                    } else if(turn === 9) {
+                        setTimeout(changeAllXToO, 500);
+                    }
+                }, 500);
             });
         });
 
+        function changeAllXToO() {
+            cells.forEach((cell, i) => {
+                if (cell.classList.contains('x')) {
+                    setTimeout(function() {
+                        cell.classList.remove('x');
+                        cell.classList.add('o');
+                        board[Math.floor(i / 3)][i % 3] = 'O';
+                        if (checkWin(board, 'O')) {
+                            winMessage.textContent = 'AI Wins';
+                            message.classList.add('active');
+                            isGameOver = true;
+                        }
+                    }, 500);
+                }
+            });
+        }
+
+        // AI starts 50% of the time
         if(Math.random() > 0.5) {
-            let aiMove = board.findIndex(c => c == '');
-            cells[aiMove].classList.add('o');
-            board[aiMove] = 'O';
-            turn++;
+            turnDisplay.textContent = 'AI\'s Turn';
+            setTimeout(function() {
+                let i = Math.floor(Math.random() * 3);
+                let j = Math.floor(Math.random() * 3);
+                while (board[i][j]) {
+                    i = Math.floor(Math.random() * 3);
+                    j = Math.floor(Math.random() * 3);
+                }
+                board[i][j] = 'O';
+                cells[i * 3 + j].classList.add('o');
+                turn++;
+                turnDisplay.textContent = 'Your Turn';
+            }, 500);
         }
     </script>
 </body>
