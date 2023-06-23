@@ -132,7 +132,6 @@
         var message = document.getElementById('message');
         var resetButton = document.getElementById('reset');
         var turnDisplay = document.getElementById('turn');
-        var isGameOver = false;
 
         function checkWin(board, player) {
             var lines = [
@@ -157,82 +156,92 @@
             return false;
         }
 
+        function minimax(board, depth, isMaximizingPlayer) {
+            if (checkWin(board, 'O')) {
+                return { score: 10 - depth };
+            } else if (checkWin(board, 'X')) {
+                return { score: depth - 10 };
+            } else if (depth === 9) {
+                return { score: 0 };
+            }
+
+            if (isMaximizingPlayer) {
+                let bestScore = -Infinity;
+                let move = {};
+
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (board[i][j] === null) {
+                            board[i][j] = 'O';
+                            let score = minimax(board, depth + 1, false).score;
+                            board[i][j] = null;
+
+                            if (score > bestScore) {
+                                bestScore = score;
+                                move = { i, j, score: bestScore };
+                            }
+                        }
+                    }
+                }
+                return move;
+            } else {
+                let bestScore = Infinity;
+                let move = {};
+
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (board[i][j] === null) {
+                            board[i][j] = 'X';
+                            let score = minimax(board, depth + 1, true).score;
+                            board[i][j] = null;
+
+                            if (score < bestScore) {
+                                bestScore = score;
+                                move = { i, j, score: bestScore };
+                            }
+                        }
+                    }
+                }
+                return move;
+            }
+        }
+
         resetButton.addEventListener('click', function() {
             location.reload();
         });
 
         cells.forEach((cell, index) => {
             cell.addEventListener('click', function() {
-                if (isGameOver || board[Math.floor(index / 3)][index % 3]) {
-                    return;
-                }
-
-                turn++;
-                board[Math.floor(index / 3)][index % 3] = 'X';
+                if (board[Math.floor(index / 3)][index % 3] || checkWin(board, 'X') || checkWin(board, 'O')) return;
+                turnDisplay.style.display = 'none';
                 cell.classList.add('x');
+                board[Math.floor(index / 3)][index % 3] = 'X';
+                turn++;
 
-                if (turn === 9) {
-                    setTimeout(changeAllXToO, 500);
-                    return;
-                }
+                if (!checkWin(board, 'X') && turn < 9) {
+                    setTimeout(() => {
+                        var { i, j } = minimax(board, turn, true);
+                        cells[i * 3 + j].classList.remove('x');
+                        cells[i * 3 + j].classList.add('o');
+                        board[i][j] = 'O';
+                        turn++;
 
-                turnDisplay.textContent = 'AI\'s Turn';
-                setTimeout(function() {
-                    let i = Math.floor(Math.random() * 3);
-                    let j = Math.floor(Math.random() * 3);
-                    while (board[i][j]) {
-                        i = Math.floor(Math.random() * 3);
-                        j = Math.floor(Math.random() * 3);
-                    }
-                    board[i][j] = 'O';
-                    cells[i * 3 + j].classList.add('o');
-                    turn++;
-                    turnDisplay.textContent = 'Your Turn';
-
-                    if (checkWin(board, 'O')) {
-                        winMessage.textContent = 'AI Wins';
-                        message.classList.add('active');
-                        isGameOver = true;
-                    } else if(turn === 9) {
-                        setTimeout(changeAllXToO, 500);
-                    }
-                }, 500);
-            });
-        });
-
-        function changeAllXToO() {
-            cells.forEach((cell, i) => {
-                if (cell.classList.contains('x')) {
-                    setTimeout(function() {
-                        cell.classList.remove('x');
-                        cell.classList.add('o');
-                        board[Math.floor(i / 3)][i % 3] = 'O';
                         if (checkWin(board, 'O')) {
-                            winMessage.textContent = 'AI Wins';
+                            winMessage.innerText = 'AI Wins!';
                             message.classList.add('active');
-                            isGameOver = true;
+                        } else if (turn === 9) {
+                            winMessage.innerText = 'Tie!';
+                            message.classList.add('active');
+                        } else {
+                            turnDisplay.style.display = 'block';
                         }
                     }, 500);
+                } else {
+                    winMessage.innerText = 'AI Wins!';
+                    message.classList.add('active');
                 }
             });
-        }
-
-        // AI starts 50% of the time
-        if(Math.random() > 0.5) {
-            turnDisplay.textContent = 'AI\'s Turn';
-            setTimeout(function() {
-                let i = Math.floor(Math.random() * 3);
-                let j = Math.floor(Math.random() * 3);
-                while (board[i][j]) {
-                    i = Math.floor(Math.random() * 3);
-                    j = Math.floor(Math.random() * 3);
-                }
-                board[i][j] = 'O';
-                cells[i * 3 + j].classList.add('o');
-                turn++;
-                turnDisplay.textContent = 'Your Turn';
-            }, 500);
-        }
+        });
     </script>
 </body>
 </html>
