@@ -246,11 +246,10 @@
         });
 
         function changeAllXToO() {
-            let timeout = 250;
             cells.forEach((cell, i) => {
                 if (cell.classList.contains('x')) {
-                    timeout += 250;
                     setTimeout(function() {
+                        if (!checkWin(board, 'O')) {
                         cell.classList.remove('x');
                         cell.classList.add('o');
                         board[Math.floor(i / 3)][i % 3] = 'O';
@@ -258,8 +257,8 @@
                             winMessage.textContent = 'AI Wins';
                             message.classList.add('active');
                             isGameOver = true;
-                        }
-                    }, timeout);
+                        };}
+                    }, math.random()*2500);
                 }
             });
         }
