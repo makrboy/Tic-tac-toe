@@ -1,77 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac Toe</title>
     <style>
         body {
-            background-color: black;
-            color: darkgreen;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            margin: 0;
+            background-color: #000000;
         }
+
         .cell {
             width: 60px;
             height: 60px;
-            border: 1px solid darkgreen;
-            display: inline-block;
-            line-height: 60px;
-            text-align: center;
-            vertical-align: top;
+            border: 1px solid #00ff00;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            color: #00ff00;
             cursor: pointer;
             position: relative;
-            overflow: hidden;
-            transition: background-color 0.3s;
+            transition: all 0.5s;
         }
-        .cell.x::before, .cell.x::after, .cell.o {
-            background-color: darkgreen;
-            position: absolute;
+
+        .x {
+            animation: xToO 0.5s forwards;
         }
-        .cell.x::before, .cell.x::after {
-            content: "";
-            width: 10px;
-            height: 100%;
-            left: 50%;
-            top: 0;
+
+        .o {
+            animation: oToX 0.5s forwards;
         }
-        .cell.x::before {
-            transform: translate(-50%, 0) rotate(45deg);
-        }
-        .cell.x::after {
-            transform: translate(-50%, 0) rotate(-45deg);
-        }
-        .cell.o {
-            border-radius: 50%;
-            width: 0;
-            height: 0;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-        }
-        .cell:not(.x):not(.o):hover {
-            background-color: rgba(0, 128, 0, 0.3);
-        }
-        .cell.x-to-o {
-            animation: xToO 0.3s forwards;
-        }
+
         @keyframes xToO {
             0% {
-                background-color: black;
-                color: darkgreen;
-            }
-            50% {
-                background-color: darkgreen;
-                color: black;
+                content: 'X';
             }
             100% {
-                background-color: black;
-                color: darkgreen;
+                content: 'O';
             }
         }
+
+        @keyframes oToX {
+            0% {
+                content: 'O';
+            }
+            100% {
+                content: 'X';
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -87,12 +65,12 @@
         <div class="cell"></div>
     </div>
     <script>
-        const cells = Array.from(document.getElementsByClassName('cell'));
-        const board = Array(3).fill().map(() => Array(3).fill(null));
-        let turn = 0;
+        var cells = Array.from(document.getElementsByClassName('cell'));
+        var board = Array(3).fill().map(() => Array(3).fill(null));
+        var turn = 0;
 
         function checkWin(board, player) {
-            const lines = [
+            var lines = [
                 [0, 1, 2],
                 [3, 4, 5],
                 [6, 7, 8],
@@ -103,43 +81,97 @@
                 [2, 4, 6]
             ];
 
-            for (let i = 0; i < lines.length; i++) {
-                const [a, b, c] = lines[i];
-                if (board[Math.floor(a / 3)][a % 3] === player &&
-                    board[Math.floor(b / 3)][b % 3] === player &&
+            for (var i = 0; i < lines.length; i++) {
+                var [a, b, c] = lines[i];
+                if (board[Math.floor(a / 3)][a % 3] === player && 
+                    board[Math.floor(b / 3)][b % 3] === player && 
                     board[Math.floor(c / 3)][c % 3] === player) {
                     return true;
                 }
             }
-
             return false;
+        }
+
+        function minimax(board, depth, isMaximizingPlayer) {
+            if (checkWin(board, 'O')) {
+                return { score: 10 - depth };
+            } else if (checkWin(board, 'X')) {
+                return { score: depth - 10 };
+            } else if (depth === 9) {
+                return { score: 0 };
+            }
+
+            if (isMaximizingPlayer) {
+                let bestScore = -Infinity;
+                let move = {};
+
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (!board[i][j]) {
+                            board[i][j] = 'O';
+                            let { score } = minimax(board, depth + 1, false);
+                            board[i][j] = null;
+
+                            if (score > bestScore) {
+                                bestScore = score;
+                                move = { i, j };
+                            }
+                        }
+                    }
+                }
+
+                return { score: bestScore, ...move };
+            } else {
+                let bestScore = Infinity;
+                let move = {};
+
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (!board[i][j]) {
+                            board[i][j] = 'X';
+                            let { score } = minimax(board, depth + 1, true);
+                            board[i][j] = null;
+
+                            if (score < bestScore) {
+                                bestScore = score;
+                                move = { i, j };
+                            }
+                        }
+                    }
+                }
+
+                return { score: bestScore, ...move };
+            }
         }
 
         cells.forEach((cell, index) => {
             cell.addEventListener('click', () => {
-                if (turn % 2 === 1 || cell.classList.contains('x') || cell.classList.contains('o')) return;
+                if (cell.classList.contains('x') || cell.classList.contains('o')) return;
+
                 cell.classList.add('x');
                 board[Math.floor(index / 3)][index % 3] = 'X';
                 turn++;
-                
-                if (checkWin(board, 'X')) {
-                    cells.filter(cell => cell.classList.contains('x') && !cell.classList.contains('o'))
-                    .forEach((cell, index) => {
-                        setTimeout(() => {
-                            cell.classList.remove('x');
-                            cell.classList.add('x-to-o');
-                            setTimeout(() => cell.classList.add('o'), 300);
-                        }, 500 * index);
-                    });
-                } else if (turn < 9) {
+
+                if (!checkWin(board, 'X') && turn < 9) {
                     setTimeout(() => {
-                        do {
-                            var i = Math.floor(Math.random() * 3);
-                            var j = Math.floor(Math.random() * 3);
-                        } while (board[i][j] !== null);
+                        var { i, j } = minimax(board, turn, true);
+                        cells[i * 3 + j].classList.remove('x');
                         cells[i * 3 + j].classList.add('o');
                         board[i][j] = 'O';
                         turn++;
+                    }, 500);
+                } else {
+                    let xCells = cells.filter(cell => cell.classList.contains('x'));
+                    let cellIndex = 0;
+                    let intervalId = setInterval(() => {
+                        if (cellIndex >= xCells.length) {
+                            clearInterval(intervalId);
+                        } else {
+                            let cell = xCells[cellIndex++];
+                            cell.classList.remove('x');
+                            cell.classList.add('o');
+                            board[Math.floor(cellIndex / 3)][cellIndex % 3] = 'O';
+                        }
                     }, 500);
                 }
             });
