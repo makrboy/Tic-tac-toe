@@ -15,6 +15,17 @@
             overflow: hidden;
             font-family: Arial, sans-serif;
         }
+        #score {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: darkgreen;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 2em;
+            transition: all 0.5s ease;
+        }
         #board {
             display: grid;
             grid-template: repeat(3, 1fr) / repeat(3, 1fr);
@@ -108,6 +119,7 @@
     </style>
 </head>
 <body>
+    <div id="score">Score: 0</div>
     <div id="message">
         <h2 id="winMessage"></h2>
         <button id="reset">Reset</button>
@@ -132,132 +144,80 @@
         var message = document.getElementById('message');
         var resetButton = document.getElementById('reset');
         var turnDisplay = document.getElementById('turn');
+        var scoreDisplay = document.getElementById('score');
+
+        // Score always 0
+        scoreDisplay.textContent = 'Score: 0';
+
+        function reset() {
+            cells.forEach(cell => cell.className = 'cell');
+            board = Array(3).fill().map(() => Array(3).fill(null));
+            turn = 0;
+            winMessage.textContent = '';
+            message.classList.remove('active');
+            turnDisplay.textContent = 'Your Turn';
+        }
 
         function checkWin(board, player) {
-            var lines = [
-                [0, 1, 2],
-                [3, 4, 5],
-                [6, 7, 8],
-                [0, 3, 6],
-                [1, 4, 7],
-                [2, 5, 8],
-                [0, 4, 8],
-                [2, 4, 6]
+            var wins = [
+                [[0, 0], [0, 1], [0, 2]],
+                [[1, 0], [1, 1], [1, 2]],
+                [[2, 0], [2, 1], [2, 2]],
+                [[0, 0], [1, 0], [2, 0]],
+                [[0, 1], [1, 1], [2, 1]],
+                [[0, 2], [1, 2], [2, 2]],
+                [[0, 0], [1, 1], [2, 2]],
+                [[0, 2], [1, 1], [2, 0]]
             ];
-
-            for (var i = 0; i < lines.length; i++) {
-                var [a, b, c] = lines[i];
-                if (board[Math.floor(a / 3)][a % 3] === player && 
-                    board[Math.floor(b / 3)][b % 3] === player && 
-                    board[Math.floor(c / 3)][c % 3] === player) {
-                    return true;
-                }
-            }
-            return false;
+            return wins.some(win => win.every(([x, y]) => board[y][x] == player));
         }
 
-        function minimax(board, depth, isMaximizingPlayer) {
-            if (checkWin(board, 'O')) {
-                return { score: 10 - depth };
-            } else if (checkWin(board, 'X')) {
-                return { score: depth - 10 };
-            } else if (depth === 9) {
-                return { score: 0 };
-            }
-
-            if (isMaximizingPlayer) {
-                let bestScore = -Infinity;
-                let move = {};
-
-                for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        if (board[i][j] === null) {
-                            board[i][j] = 'O';
-                            let score = minimax(board, depth + 1, false).score;
-                            board[i][j] = null;
-
-                            if (score > bestScore) {
-                                bestScore = score;
-                                move = { i, j, score: bestScore };
-                            }
-                        }
-                    }
-                }
-                return move;
-            } else {
-                let bestScore = Infinity;
-                let move = {};
-
-                for (let i = 0; i < 3; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        if (board[i][j] === null) {
-                            board[i][j] = 'X';
-                            let score = minimax(board, depth + 1, true).score;
-                            board[i][j] = null;
-
-                            if (score < bestScore) {
-                                bestScore = score;
-                                move = { i, j, score: bestScore };
-                            }
-                        }
-                    }
-                }
-                return move;
-            }
-        }
-
-        resetButton.addEventListener('click', function() {
-            location.reload();
-        });
+        resetButton.addEventListener('click', reset);
 
         cells.forEach((cell, index) => {
             cell.addEventListener('click', function() {
-                if (board[Math.floor(index / 3)][index % 3] || checkWin(board, 'X') || checkWin(board, 'O')) {
-                    return;
-                }
-                turn++;
-                board[Math.floor(index / 3)][index % 3] = 'X';
-                cell.classList.add('x');
-
-                if (checkWin(board, 'X')) {
-                    winMessage.textContent = 'You Win';
-                    message.classList.add('active');
-                } else if (turn < 9) {
-                    turnDisplay.textContent = 'AI\'s Turn';
-                    setTimeout(function() {
-                        let { i, j } = minimax(board, turn, true);
-                        board[i][j] = 'O';
-                        cells[i * 3 + j].classList.add('o');
+                if (cell.className == 'cell' && !message.classList.contains('active')) {
+                    cell.classList.add('x');
+                    board[Math.floor(index / 3)][index % 3] = 'X';
+                    turn++;
+                    if (checkWin(board, 'X')) {
+                        winMessage.textContent = 'You Win';
+                        message.classList.add('active');
+                        return;
+                    }
+                    if (turn < 9) {
+                        var move;
+                        do {
+                            move = Math.floor(Math.random() * 9);
+                        } while (cells[move].className != 'cell');
+                        cells[move].classList.add('o');
+                        board[Math.floor(move / 3)][move % 3] = 'O';
                         turn++;
-
                         if (checkWin(board, 'O')) {
                             winMessage.textContent = 'AI Wins';
                             message.classList.add('active');
-                        } else if(turn === 9){
-                            winMessage.textContent = 'Draw... wait, AI cheated!';
-                            board[0][0] = 'O';
-                            cells[0].classList.add('o');
-                            message.classList.add('active');
-                        } else {
-                            turnDisplay.textContent = 'Your Turn';
+                            return;
                         }
-                    }, 500);
-                } else {
-                    winMessage.textContent = 'Draw';
-                    message.classList.add('active');
+                    }
+                    if (turn == 9) {
+                        winMessage.textContent = 'Draw';
+                        // Change all Xs to Os until the AI wins
+                        cells.forEach((cell, i) => {
+                            if (cell.classList.contains('x')) {
+                                cell.classList.remove('x');
+                                cell.classList.add('o');
+                                board[Math.floor(i / 3)][i % 3] = 'O';
+                                if (checkWin(board, 'O')) {
+                                    winMessage.textContent = 'AI Wins';
+                                    message.classList.add('active');
+                                    return;
+                                }
+                            }
+                        });
+                    }
                 }
             });
         });
-
-        // AI starts 50% of the time
-        if(Math.random() > 0.5) {
-            let i = Math.floor(Math.random() * 3);
-            let j = Math.floor(Math.random() * 3);
-            board[i][j] = 'O';
-            cells[i * 3 + j].classList.add('o');
-            turn++;
-            turnDisplay.textContent = 'Your Turn';
-        }
     </script>
 </body>
 </html>
