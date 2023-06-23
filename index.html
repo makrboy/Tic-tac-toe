@@ -228,15 +228,10 @@
 
                 turnDisplay.textContent = 'AI\'s Turn';
                 setTimeout(function() {
-                    let i = Math.floor(Math.random() * 3);
-                    let j = Math.floor(Math.random() * 3);
-                    while (board[i][j]) {
-                        i = Math.floor(Math.random() * 3);
-                        j = Math.floor(Math.random() * 3);
-                    }
-                    board[i][j] = 'O';
-                    cells[i * 3 + j].classList.add('o');
-                    turn++;
+                    let { i, j } = minimax(board, turn, true);
+                        board[i][j] = 'O';
+                        cells[i * 3 + j].classList.add('o');
+                        turn++;
                     turnDisplay.textContent = 'Your Turn';
 
                     if (checkWin(board, 'O')) {
