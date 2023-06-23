@@ -119,17 +119,7 @@
     </style>
 </head>
 <body>
-    <div id="board">
-        <div class="cell"></div>
-        <div class="cell"></div>
-        <div class="cell"></div>
-        <div class="cell"></div>
-        <div class="cell"></div>
-        <div class="cell"></div>
-        <div class="cell"></div>
-        <div class="cell"></div>
-        <div class="cell"></div>
-    </div>
+    <div id="board"></div>
     <div id="message">
         <div id="winMessage"></div>
         <button id="reset">Play Again</button>
@@ -137,170 +127,101 @@
     <div id="turn">Your Turn</div>
     <div id="counter">AI: 0 - You: 0</div>
     <script>
-        var cells = Array.from(document.getElementsByClassName('cell'));
-        var board = Array(3).fill().map(() => Array(3).fill(null));
-        var turn = 0;
-        var winMessage = document.getElementById('winMessage');
-        var message = document.getElementById('message');
-        var resetButton = document.getElementById('reset');
-        var turnDisplay = document.getElementById('turn');
-        var counterDisplay = document.getElementById('counter');
-        var aiWins = localStorage.getItem('aiWins') || 0;
-        var userWins = localStorage.getItem('userWins') || 0;
+        const board = document.querySelector('#board');
+        const cells = Array.from({ length: 9 }, () => document.createElement('div'));
+        const winMessage = document.querySelector('#winMessage');
+        const message = document.querySelector('#message');
+        const reset = document.querySelector('#reset');
+        const turn = document.querySelector('#turn');
+        const counter = document.querySelector('#counter');
+        const lines = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+        let aiWins = Number(localStorage.getItem('aiWins') || 0);
+        let playerWins = Number(localStorage.getItem('playerWins') || 0);
+        let currentTurn = 0;
+
+        cells.forEach(cell => {
+            cell.classList.add('cell');
+            board.appendChild(cell);
+        });
 
         function updateCounter() {
-            counterDisplay.textContent = `AI: ${aiWins} - You: ${userWins}`;
+            counter.textContent = `AI: ${aiWins} - You: ${playerWins}`;
         }
 
-        updateCounter();
-
-        function checkWin(board, player) {
-            var wins = [
-                [[0, 0], [0, 1], [0, 2]],
-                [[1, 0], [1, 1], [1, 2]],
-                [[2, 0], [2, 1], [2, 2]],
-                [[0, 0], [1, 0], [2, 0]],
-                [[0, 1], [1, 1], [2, 1]],
-                [[0, 2], [1, 2], [2, 2]],
-                [[0, 0], [1, 1], [2, 2]],
-                [[0, 2], [1, 1], [2, 0]]
-            ];
-
-            for (var i = 0; i < wins.length; i++) {
-                if (wins[i].every(([x, y]) => board[x][y] === player)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        function minimax(board, depth, maximizingPlayer) {
-            if (checkWin(board, 'O')) {
-                return { score: 10 - depth };
-            }
-
-            if (checkWin(board, 'X')) {
-                return { score: depth - 10 };
-            }
-
-            if (depth === 9) {
-                return { score: 0 };
-            }
-
-            if (maximizingPlayer) {
-                var bestScore = -Infinity;
-                var move;
-
-                for (var i = 0; i < 3; i++) {
-                    for (var j = 0; j < 3; j++) {
-                        if (!board[i][j]) {
-                            board[i][j] = 'O';
-                            var score = minimax(board, depth + 1, false).score;
-                            board[i][j] = null;
-
-                            if (score > bestScore) {
-                                bestScore = score;
-                                move = { i, j };
-                            }
-                        }
-                    }
-                }
-
-                return {
-                    score: bestScore,
-                    ...move
-                };
-            } else {
-                var bestScore = Infinity;
-                var move;
-
-                for (var i = 0; i < 3; i++) {
-                    for (var j = 0; j < 3; j++) {
-                        if (!board[i][j]) {
-                            board[i][j] = 'X';
-                            var score = minimax(board, depth + 1, true).score;
-                            board[i][j] = null;
-
-                            if (score < bestScore) {
-                                bestScore = score;
-                                move = { i, j };
-                            }
-                        }
-                    }
-                }
-
-                return {
-                    score: bestScore,
-                    ...move
-                };
-            }
-        }
-
-        function checkTie(board) {
-            return board.every(row => row.every(cell => cell));
+        function aiCheat() {
+            var oCells = cells.filter(cell => cell.classList.contains('o'));
+            var emptyCells = cells.filter(cell => !cell.classList.contains('x') && !cell.classList.contains('o'));
+            oCells[0].classList.remove('o');
+            emptyCells[0].classList.add('o');
         }
 
         function handleClick(event) {
-            var index = cells.indexOf(event.target);
-            var i = Math.floor(index / 3);
-            var j = index % 3;
-
-            if (board[i][j] || checkWin(board, 'X') || checkWin(board, 'O')) {
+            if (event.target.classList.contains('x') || event.target.classList.contains('o')) {
                 return;
             }
-
-            board[i][j] = 'X';
-            event.target.classList.add('x');
-            turn++;
-
-            if (checkWin(board, 'X')) {
-                winMessage.textContent = 'You win!';
+            event.target.classList.add(currentTurn % 2 === 0 ? 'x' : 'o');
+            const board = cells.map(cell => cell.classList.contains('x') ? 'X' : (cell.classList.contains('o') ? 'O' : null));
+            if (checkWin(board)) {
+                if (currentTurn % 2 === 0) {
+                    winMessage.textContent = 'You win!';
+                    playerWins++;
+                    localStorage.setItem('playerWins', playerWins);
+                } else {
+                    winMessage.textContent = 'AI wins!';
+                    aiWins++;
+                    localStorage.setItem('aiWins', aiWins);
+                }
                 message.classList.add('active');
-                userWins++;
-                localStorage.setItem('userWins', userWins);
                 updateCounter();
                 return;
             }
-
             if (checkTie(board)) {
-                winMessage.textContent = 'It\'s a tie!';
+                aiCheat();
+                winMessage.textContent = 'AI wins by cheating!';
                 message.classList.add('active');
+                aiWins++;
+                localStorage.setItem('aiWins', aiWins);
+                updateCounter();
                 return;
             }
-
-            turnDisplay.textContent = 'AI\'s Turn';
-            setTimeout(() => {
-                var { i, j } = minimax(board, turn, true);
-                board[i][j] = 'O';
-                cells[i * 3 + j].classList.add('o');
-                turn++;
-
-                if (checkWin(board, 'O')) {
-                    winMessage.textContent = 'AI wins!';
-                    message.classList.add('active');
-                    aiWins++;
-                    localStorage.setItem('aiWins', aiWins);
-                    updateCounter();
-                } else if (checkTie(board)) {
-                    winMessage.textContent = 'It\'s a tie!';
-                    message.classList.add('active');
-                } else {
-                    turnDisplay.textContent = 'Your Turn';
-                }
-            }, 500);
+            currentTurn++;
+            turn.textContent = currentTurn % 2 === 0 ? 'Your Turn' : 'AI\'s Turn';
+            if (currentTurn % 2 !== 0) {
+                setTimeout(() => {
+                    const emptyCells = cells.filter(cell => !cell.classList.contains('x') && !cell.classList.contains('o'));
+                    const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    randomCell.click();
+                }, 500);
+            }
         }
 
-        function reset() {
-            board = Array(3).fill().map(() => Array(3).fill(null));
-            cells.forEach(cell => cell.className = 'cell');
-            turn = 0;
+        function checkWin(board) {
+            return lines.some(line => line.every(index => board[index] === 'X')) || lines.some(line => line.every(index => board[index] === 'O'));
+        }
+
+        function checkTie(board) {
+            return board.every(cell => cell !== null);
+        }
+
+        function resetBoard() {
+            cells.forEach(cell => cell.classList.remove('x', 'o'));
+            currentTurn = 0;
+            turn.textContent = 'Your Turn';
             message.classList.remove('active');
-            turnDisplay.textContent = 'Your Turn';
         }
 
         cells.forEach(cell => cell.addEventListener('click', handleClick));
-        resetButton.addEventListener('click', reset);
+        reset.addEventListener('click', resetBoard);
+        updateCounter();
     </script>
 </body>
 </html>
