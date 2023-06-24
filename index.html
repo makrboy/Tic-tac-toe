@@ -8,7 +8,7 @@
             margin: 0;
             padding: 0;
             background-color: black;
-            color: #004d00;
+            color: #008000; /* A shade of green */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -23,7 +23,7 @@
             height: 90vmin;
         }
         .cell {
-            background-color: #006600;
+            background-color: #006400; /* Darker green */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -35,7 +35,7 @@
         .cell:before, .cell:after {
             content: "";
             position: absolute;
-            background-color: #008000;
+            background-color: #008000; /* Same as text color */
             transition: all 0.5s ease;
         }
         .cell.x:before, .cell.x:after {
@@ -56,7 +56,7 @@
             border-radius: 50%;
             top: 20%;
             left: 20%;
-            border: 10px solid #008000;
+            border: 10px solid #008000; /* Same as text color */
             background-color: transparent;
         }
         .cell.o:before {
@@ -70,8 +70,8 @@
             top: 10px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: #006600;
-            color: #004d00;
+            background-color: #006400; /* Same as cell color */
+            color: #008000; /* Same as text color */
             padding: 20px;
             border-radius: 10px;
             display: none;
@@ -82,8 +82,8 @@
             display: block;
         }
         #reset {
-            background-color: #004d00;
-            color: #006600;
+            background-color: #008000; /* Same as text color */
+            color: #006400; /* Same as cell color */
             border: none;
             padding: 20px 40px;
             border-radius: 10px;
@@ -98,8 +98,8 @@
             bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: #006600;
-            color: #004d00;
+            background-color: #006400; /* Same as cell color */
+            color: #008000; /* Same as text color */
             padding: 20px;
             border-radius: 10px;
             font-size: 2em;
